@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Docker restarts can leave Xvfb's lock and socket in the container's /tmp.
+# Clear them only when no display server is running.
+if ! ps -eo comm= | grep -qx Xvfb; then
+  rm -f /tmp/.X99-lock /tmp/.X11-unix/X99
+fi
+
+Xvfb :99 -screen 0 1280x800x24 -nolisten tcp &
+xvfb_pid=$!
+sleep 2
+if ! kill -0 "$xvfb_pid" 2>/dev/null; then
+  echo "Xvfb failed to start" >&2
+  exit 1
+fi
+openbox >/tmp/openbox.log 2>&1 &
+x11vnc -display :99 -localhost -forever -shared -nopw -rfbport 5900 >/tmp/x11vnc.log 2>&1 &
+websockify --web=/usr/share/novnc 6080 localhost:5900 >/tmp/websockify.log 2>&1 &
+
+exec sleep infinity

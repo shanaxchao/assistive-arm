@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="$(arg name)">
+  <xacro:include filename="$(find ur_simulation_gz)/urdf/ur_gz.urdf.xacro"/>
+
+  <material name="pickup_orange">
+    <color rgba="0.95 0.42 0.10 1"/>
+  </material>
+
+  <xacro:macro name="pickup_link" params="name size mass inertia **extra_visual">
+    <link name="${name}">
+      <inertial>
+        <mass value="${mass}"/>
+        <inertia ixx="${inertia}" ixy="0" ixz="0" iyy="${inertia}" iyz="0" izz="${inertia}"/>
+      </inertial>
+      <visual>
+        <geometry><box size="${size}"/></geometry>
+        <material name="pickup_orange"/>
+      </visual>
+      <collision>
+        <geometry><box size="${size}"/></geometry>
+      </collision>
+      <xacro:insert_block name="extra_visual"/>
+    </link>
+  </xacro:macro>
+
+  <xacro:pickup_link name="pickup_palm" size="0.058 0.098 0.028" mass="0.18" inertia="0.00013">
+    <extra_visual/>
+  </xacro:pickup_link>
+  <joint name="pickup_mount" type="fixed">
+    <parent link="tool0"/>
+    <child link="pickup_palm"/>
+    <origin xyz="0 0 0.023"/>
+  </joint>
+  <link name="pickup_center"/>
+  <joint name="pickup_center_joint" type="fixed">
+    <parent link="pickup_palm"/>
+    <child link="pickup_center"/>
+    <origin xyz="0 0 0.052"/>
+  </joint>
+
+  <xacro:macro name="pickup_finger" params="side sign">
+    <xacro:pickup_link name="pickup_${side}_pad" size="0.045 0.012 0.040" mass="0.025" inertia="0.000006">
+      <extra_visual>
+        <visual>
+          <origin xyz="0 0 -0.027"/>
+          <geometry><box size="0.025 0.010 0.026"/></geometry>
+          <material name="pickup_orange"/>
+        </visual>
+      </extra_visual>
+    </xacro:pickup_link>
+    <joint name="pickup_${side}_finger" type="prismatic">
+      <parent link="pickup_palm"/>
+      <child link="pickup_${side}_pad"/>
+      <origin xyz="0 ${sign * 0.044} 0.052"/>
+      <axis xyz="0 ${-sign} 0"/>
+      <limit lower="0" upper="0.025" effort="8" velocity="0.12"/>
+      <dynamics damping="8"/>
+    </joint>
+    <gazebo reference="pickup_${side}_pad">
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:pickup_finger side="left" sign="${1}"/>
+  <xacro:pickup_finger side="right" sign="${-1}"/>
+
+  <xacro:macro name="pickup_finger_control" params="side">
+    <joint name="pickup_${side}_finger">
+      <command_interface name="effort"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+  </xacro:macro>
+  <ros2_control name="pickup_gripper" type="system">
+    <hardware><plugin>gz_ros2_control/GazeboSimSystem</plugin></hardware>
+    <xacro:pickup_finger_control side="left"/>
+    <xacro:pickup_finger_control side="right"/>
+  </ros2_control>
+</robot>

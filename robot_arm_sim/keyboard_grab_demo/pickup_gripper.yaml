@@ -1,0 +1,6 @@
+pickup_gripper:
+  ros__parameters:
+    type: effort_controllers/JointGroupEffortController
+    joints:
+      - pickup_left_finger
+      - pickup_right_finger
