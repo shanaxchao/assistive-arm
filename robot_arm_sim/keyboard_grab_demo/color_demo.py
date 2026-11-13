@@ -150,9 +150,12 @@ class ColorDemo(Pickup):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--spawn-only', action='store_true')
-    parser.add_argument('--sequence', nargs='+', choices=list(CUBES),
-                        help='Run a fixed sequence for repeatability testing')
+    operation = parser.add_mutually_exclusive_group()
+    operation.add_argument('--spawn-only', action='store_true')
+    operation.add_argument('--color', choices=list(CUBES),
+                            help='Run one pick-and-return cycle for this color')
+    operation.add_argument('--sequence', nargs='+', choices=list(CUBES),
+                            help='Run a fixed sequence for repeatability testing')
     args = parser.parse_args()
     with open('/tmp/ur5e_pickup.lock', 'a') as lock:
         try:
@@ -165,6 +168,9 @@ def main():
         try:
             if args.spawn_only:
                 node.spawn_scene()
+                return 0
+            if args.color:
+                node.cycle(args.color)
                 return 0
             if args.sequence:
                 for color in args.sequence:

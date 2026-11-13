@@ -191,3 +191,27 @@ the world obstacle list during its approach and restored after placement.
 
 The demo assumes upright 5 cm cubes. It compensates for the measured offset
 between the held cube and the finger center when placing the cube back.
+
+### Control the demo by voice
+
+Keep the color demo launch running in the container. Speech recognition runs
+on the host, where the microphone is available; each accepted command starts
+one color cycle in the running container. Install PortAudio on the host if
+needed, then install the Python packages:
+
+```bash
+brew install portaudio
+python3 -m pip install openai-whisper PyAudio
+```
+
+From the repository root, start the listener:
+
+```bash
+python3 transcriber.py
+```
+
+Speak a command such as "pick up the red cube", "grab the green block", or
+"lift the blue box". The parser rejects negated commands, unsupported or
+ambiguous colors, and phrases without both a grab action and an object.
+Whisper downloads its `tiny` model the first time it runs. Press Ctrl+C to
+stop listening.
